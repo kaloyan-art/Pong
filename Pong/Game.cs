@@ -11,8 +11,10 @@ namespace Pong
 
         Texture2D ballTexture;
         Vector2 ballPosition;
+        Vector2 ballSpeedVector;
         float ballSpeed;
-        //TODO: Добавете нова булева променлива down, която показва дали топката се движи нагоре/надолу
+        double remainderX;
+        double remainderY;
 
         public Game()
         {
@@ -23,11 +25,19 @@ namespace Pong
 
         protected override void Initialize()
         {
-            ballPosition = new Vector2(_graphics.PreferredBackBufferWidth / 2,
-                                       _graphics.PreferredBackBufferHeight / 2);
-            ballSpeed = 100f;
+           
+            ballPosition = new Vector2(
+                _graphics.PreferredBackBufferWidth / 2,
+                _graphics.PreferredBackBufferHeight / 2);
 
-            //TODO: инициализирайте булевата променлива
+            ballSpeed = 200f; 
+
+          
+            ballSpeedVector = new Vector2(1f, -1f);
+            ballSpeedVector.Normalize(); 
+
+            remainderX = 0;
+            remainderY = 0;
 
             base.Initialize();
         }
@@ -35,21 +45,56 @@ namespace Pong
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            ballTexture = Content.Load<Texture2D>("ball");
+            ballTexture = Content.Load<Texture2D>("ball"); 
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+           
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
+                Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            float updatedBallSpeed = ballSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            //TODO: Изменете ballPosition.Y координатата в зависимост от стойността на булевата променлива down
+          
+            float moveX = ballSpeedVector.X * ballSpeed * elapsed;
+            float moveY = ballSpeedVector.Y * ballSpeed * elapsed;
 
-            //TODO: Ако картинката е напуска границите на екрана, това означава, че топката се е "ударила" в края на екрана и трябва да
-            //промени посоката си на движение. За целта трябва да промените променливата down.
+           
+            remainderX += moveX;
+            remainderY += moveY;
 
+           
+            int deltaX = (int)remainderX;
+            int deltaY = (int)remainderY;
+
+            ballPosition.X += deltaX;
+            ballPosition.Y += deltaY;
+
+           
+            remainderX -= deltaX;
+            remainderY -= deltaY;
+
+          
+            int screenWidth = _graphics.PreferredBackBufferWidth;
+            int screenHeight = _graphics.PreferredBackBufferHeight;
+            float halfBallWidth = ballTexture.Width / 2f;
+            float halfBallHeight = ballTexture.Height / 2f;
+
+           
+            if (ballPosition.X - halfBallWidth <= 0 || ballPosition.X + halfBallWidth >= screenWidth)
+            {
+                ballSpeedVector.X *= -1;
+                ballPosition.X = MathHelper.Clamp(ballPosition.X, halfBallWidth, screenWidth - halfBallWidth); 
+            }
+
+          
+            if (ballPosition.Y - halfBallHeight <= 0 || ballPosition.Y + halfBallHeight >= screenHeight)
+            {
+                ballSpeedVector.Y *= -1;
+                ballPosition.Y = MathHelper.Clamp(ballPosition.Y, halfBallHeight, screenHeight - halfBallHeight); 
+            }
 
             base.Update(gameTime);
         }
